@@ -1,0 +1,71 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Fudebako",
+  "version": "1.0.0",
+  "identifier": "com.bl8ming.fudebako",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "Fudebako",
+        "width": 1180,
+        "height": 820,
+        "minWidth": 380,
+        "minHeight": 480,
+        "center": true,
+        "dragDropEnabled": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis",
+      "deb",
+      "appimage",
+      "rpm"
+    ],
+    "category": "Productivity",
+    "shortDescription": "Featherweight click-to-edit markdown editor",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "fileAssociations": [
+      {
+        "ext": [
+          "md",
+          "markdown",
+          "mdown",
+          "mkd"
+        ],
+        "name": "Markdown",
+        "description": "Markdown document",
+        "role": "Editor",
+        "mimeType": "text/markdown"
+      }
+    ],
+    "windows": {
+      "nsis": {
+        "installerHooks": "./windows/hooks.nsh",
+        "installMode": "currentUser",
+        "displayLanguageSelector": false
+      }
+    },
+    "copyright": "© 2026 Bl∞ming — MIT License",
+    "license": "MIT",
+    "publisher": "Bl∞ming"
+  }
+}

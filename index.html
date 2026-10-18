@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#121316" media="(prefers-color-scheme: dark)" />
+  <meta name="description" content="Fudebako — a featherweight markdown editor where every block is rendered, and editable with a click." />
+  <link rel="icon" href="./icon-small.svg" type="image/svg+xml" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <title>Fudebako</title>
+  <script>
+    // One-time migration from the app's former name (Inkling): keep settings, draft and folder
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('inkling.')) {
+          const nk = 'fudebako.' + k.slice(8);
+          if (localStorage.getItem(nk) === null) localStorage.setItem(nk, localStorage.getItem(k));
+        }
+      }
+    } catch {}
+    // Apply theme before first paint (no flash)
+    try {
+      const s = JSON.parse(localStorage.getItem('fudebako.settings') || '{}');
+      const d = document.documentElement;
+      if (s.theme) d.dataset.theme = s.theme;
+      if (s.accent) d.dataset.accent = s.accent;
+      if (s.font) d.dataset.font = s.font;
+      if (s.width) d.dataset.width = s.width;
+      if (s.palette) d.dataset.palette = s.palette;
+      const dark = s.theme === 'dark' || ((!s.theme || s.theme === 'auto') && matchMedia('(prefers-color-scheme: dark)').matches);
+      d.dataset.resolvedTheme = dark ? 'dark' : 'light';
+    } catch {}
+  </script>
+</head>
+<body>
+  <div id="app">
+    <header class="topbar" id="topbar">
+      <div class="tb-left">
+        <button class="ib" id="btn-outline" title="Sidebar (Ctrl+\)" aria-label="Sidebar"></button>
+        <button class="ib" id="btn-more" title="File menu — new, open, save, export…" aria-label="File menu" aria-haspopup="menu"></button>
+        <div class="brand" aria-hidden="true"><svg viewBox="0 0 512 512" width="22" height="22"> <defs><linearGradient id="fb-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f2ea"/><stop offset="1" stop-color="#ece5d8"/></linearGradient><clipPath id="fb-c"><rect width="512" height="300"/></clipPath></defs> <rect width="512" height="512" rx="128" fill="url(#fb-g)"/> <g clip-path="url(#fb-c)" stroke="#1d1c1a" stroke-width="18" stroke-linejoin="round"><g transform="rotate(-14 256 420)"><rect x="150" y="150" width="40" height="240" rx="12" fill="#c9b6ff"/><path d="M150 152h40l-20-52z" fill="#ffe9cf"/><path d="M163 118h14l-7-18z" fill="#1d1c1a"/></g><g transform="rotate(2 256 420)"><rect x="236" y="120" width="40" height="270" rx="12" fill="#9ee6c9"/><path d="M236 122h40l-20-52z" fill="#ffe9cf"/><path d="M249 88h14l-7-18z" fill="#1d1c1a"/></g><g transform="rotate(16 256 420)"><rect x="320" y="150" width="40" height="240" rx="12" fill="#ffe08a"/><path d="M320 152h40l-20-52z" fill="#ffe9cf"/><path d="M333 118h14l-7-18z" fill="#1d1c1a"/></g></g> <rect x="96" y="280" width="320" height="160" rx="64" fill="#ffffff" stroke="#1d1c1a" stroke-width="22"/> <ellipse cx="200" cy="350" rx="24" ry="30" fill="#1d1c1a"/><ellipse cx="312" cy="350" rx="24" ry="30" fill="#1d1c1a"/> <circle cx="208" cy="339" r="8" fill="#fff"/><circle cx="320" cy="339" r="8" fill="#fff"/><path d="M218 392q19 26 38 0q19 26 38 0" fill="none" stroke="#1d1c1a" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/> </svg></div>
+        <div class="file">
+          <span class="crumb" id="crumb" hidden></span>
+          <span class="file-name" id="file-name" spellcheck="false" title="Click to rename">Untitled.md</span>
+          <span class="dirty" id="dirty" title="Unsaved changes"></span>
+        </div>
+      </div>
+      <div class="tb-right">
+        <button class="ib hide-sm" id="btn-open" title="Open (Ctrl+O)" aria-label="Open"></button>
+        <button class="ib" id="btn-save" title="Save (Ctrl+S)" aria-label="Save"></button>
+        <span class="tb-sep hide-sm"></span>
+        <button class="ib" id="btn-source" title="Source mode (Ctrl+/)" aria-label="Source mode"></button>
+        <button class="ib hide-sm" id="btn-theme" title="Theme" aria-label="Theme"></button>
+        <button class="ib" id="btn-appearance" title="Appearance" aria-label="Appearance"></button>
+      </div>
+    </header>
+
+    <aside class="outline" id="outline" aria-label="Sidebar">
+      <div class="side-tabs" role="tablist">
+        <button class="side-tab" data-tab="files" role="tab">Files</button>
+        <button class="side-tab" data-tab="toc" role="tab">Contents</button>
+      </div>
+      <section class="pane pane-files" id="pane-files">
+        <div class="fold-head">
+          <span class="fold-name" id="fold-name" title=""></span>
+          <span class="fold-actions">
+            <button class="ib sm" id="fold-new" title="New file in this folder"></button>
+            <button class="ib sm" id="fold-refresh" title="Refresh"></button>
+            <button class="ib sm" id="fold-open" title="Open another folder (Ctrl+Shift+O)"></button>
+            <button class="ib sm" id="fold-close" title="Close folder"></button>
+          </span>
+        </div>
+        <div class="fold-filter"><input id="fold-filter" type="search" placeholder="Filter files…" spellcheck="false" autocomplete="off"></div>
+        <form class="fold-create" id="fold-create" hidden><input id="fold-create-name" placeholder="new-note.md" spellcheck="false" autocomplete="off"></form>
+        <nav class="tree" id="tree"></nav>
+        <div class="fold-empty" id="fold-empty">
+          <div class="fe-art" aria-hidden="true"></div>
+          <p>Open a folder to browse and switch between its Markdown files.</p>
+          <button class="btn-primary" id="fold-pick">Open folder</button>
+          <button class="btn-ghost" id="fold-reopen" hidden></button>
+        </div>
+      </section>
+      <section class="pane pane-toc" id="pane-toc">
+        <nav id="outline-list"></nav>
+        <div class="outline-empty">Headings will appear here.</div>
+      </section>
+    </aside>
+    <div class="scrim" id="scrim"></div>
+
+    <main class="stage" id="stage">
+      <article class="doc md" id="doc"></article>
+      <div class="tail" id="tail" title="Click to add a block"><span>＋ Click to continue writing</span></div>
+      <textarea class="source" id="source" spellcheck="false" hidden></textarea>
+    </main>
+
+    <div class="status" id="status"></div>
+    <div class="fmtbar" id="fmtbar" role="toolbar" aria-label="Formatting"></div>
+    <div class="popover" id="popover" hidden></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="drop" id="drop"><div>Drop a Markdown file to open it</div></div>
+    <dialog class="modal" id="modal"></dialog>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

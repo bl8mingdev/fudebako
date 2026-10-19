@@ -210,8 +210,14 @@ export function createMarkdown() {
   };
   md.renderer.rules.code_block = (tokens, i, o, env, slf) =>
     `<pre class="code"${slf.renderAttrs(tokens[i])}><code class="hljs">${esc(tokens[i].content)}</code></pre>\n`;
-  md.renderer.rules.html_block = (tokens, i, o, env, slf) =>
-    `<div class="html-block"${slf.renderAttrs(tokens[i])}>${tokens[i].content}</div>\n`;
+  // A balanced HTML block is wrapped so it can be clicked and edited. A block that only opens or
+  // closes a container (`<div align="center">` … blank line … Markdown … `</div>`, `<details>`…)
+  // is emitted as-is, so the Markdown blocks in between end up inside it, as on GitHub.
+  md.renderer.rules.html_block = (tokens, i, o, env, slf) => {
+    const c = tokens[i].content;
+    if (tagBalance(c) !== 0) return c;
+    return `<div class="html-block"${slf.renderAttrs(tokens[i])}>${c}</div>\n`;
+  };
   // Tables get a scroll wrapper on narrow screens
   const tOpen = md.renderer.rules.table_open || ((t, i, o, e, s) => s.renderToken(t, i, o));
   md.renderer.rules.table_open = (t, i, o, e, s) => `<div class="table-wrap">${tOpen(t, i, o, e, s)}`;
@@ -225,4 +231,15 @@ export function createMarkdown() {
     return linkOpen(t, i, o, e, s);
   };
   return md;
+}
+
+const VOID_TAG = /^(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)$/i;
+/** Opening minus closing (non-void) tags in an HTML fragment. */
+function tagBalance(html) {
+  let n = 0;
+  for (const m of html.replace(/<!--[\s\S]*?-->/g, '').matchAll(/<(\/?)([a-z][a-z0-9-]*)\b[^>]*?(\/?)>/gi)) {
+    if (VOID_TAG.test(m[2]) || m[3]) continue;
+    n += m[1] ? -1 : 1;
+  }
+  return n;
 }

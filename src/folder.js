@@ -3,6 +3,7 @@
 //  - Chromium / PWA: File System Access API (handle kept in IndexedDB)
 //  - Elsewhere: <input webkitdirectory> (read-only, saving downloads a copy)
 import { isTauri } from './fileio.js';
+import { IMAGE_EXT } from './localimg.js';
 
 const MD = /\.(md|markdown|mdown|mkd|mdx)$/i;
 const SKIP = /^(\.|node_modules$|target$|dist$|build$|__pycache__$|venv$)/;
@@ -56,7 +57,8 @@ export async function pickFolder() {
       if (!all.length) return resolve(null);
       const name = all[0].webkitRelativePath.split('/')[0];
       const files = all.slice(0, MAX_FILES).map((f) => ({ rel: f.webkitRelativePath.split('/').slice(1).join('/'), name: f.name, file: f }));
-      resolve({ kind: 'input', name, root: null, readonly: true, files: sortFiles(files) });
+      const assets = new Map([...input.files].filter((f) => IMAGE_EXT.test(f.name)).map((f) => [f.webkitRelativePath.split('/').slice(1).join('/'), f]));
+      resolve({ kind: 'input', name, root: null, readonly: true, files: sortFiles(files), assets });
     };
     input.addEventListener('cancel', () => resolve(null));
     input.click();

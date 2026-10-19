@@ -48,7 +48,11 @@
 .md mark { background: linear-gradient(transparent 38%, color-mix(in oklab, var(--accent) 26%, transparent) 38%, color-mix(in oklab, var(--accent) 26%, transparent) 88%, transparent 88%); color: inherit; padding: 0 .1em; }
 .md del, .md s { color: var(--ink-3); text-decoration-thickness: 1.5px; }
 .md sub, .md sup { font-size: .72em; line-height: 0; }
-.md img { max-width: 100%; height: auto; border-radius: 10px; display: block; margin: .3em auto; box-shadow: var(--shadow); }
+.md img { max-width: 100%; height: auto; vertical-align: middle; }
+/* a picture on its own is centred and framed; images among text (badges, icons) stay inline like on GitHub */
+.md p > img:only-child, .md > img { display: block; margin: .3em auto; border-radius: 10px; box-shadow: var(--shadow); }
+.md img.img-missing { display: inline-block; min-width: 1.6em; min-height: 1.4em; padding: .1em .4em; box-shadow: none; border-radius: 6px;
+  outline: 1px dashed color-mix(in oklch, currentColor 40%, transparent); color: var(--ink-3); font-size: .85em; }
 .md hr { border: 0; height: auto; margin: 2.4em 0; text-align: center; color: var(--ink-3); }
 .md hr::before { content: "⁂"; font-size: 1.1em; letter-spacing: .3em; }
 

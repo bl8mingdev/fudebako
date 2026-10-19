@@ -7,6 +7,7 @@ import contentCss from './styles/content.css?raw';
 import sample from './sample.md?raw';
 import { createMarkdown } from './markdown.js';
 import { hydrate, resetMermaidTheme } from './hydrate.js';
+import { markLocal, resolveImages, setImageContext, clearImageCache } from './localimg.js';
 import * as io from './fileio.js';
 import { icon } from './icons.js';
 import { APP_NAME, NAME_NOTE, TAGLINE } from './brand.js';
@@ -71,14 +72,16 @@ function updateDirty() {
 }
 
 /* ============================== render ============================== */
+setImageContext(() => ({ path: S.file.path, folder: S.folder, entry: S.entry }));
 function render() {
   const sy = stage.scrollTop;
   if (S.src.trim()) {
-    docEl.innerHTML = md.render(S.src);
+    docEl.innerHTML = markLocal(md.render(S.src));
   } else {
     docEl.innerHTML = '<p class="empty-hint">Start writing — click here. <span>Markdown, LaTeX & Mermaid welcome.</span></p>';
   }
   hydrate(docEl).then(refreshOutlineActive);
+  resolveImages(docEl);
   stage.scrollTop = sy;
   buildOutline();
   updateStats();
@@ -255,7 +258,7 @@ function updatePreview() {
   }
   const show = src.trim() && (PREVIEW_KINDS.test(ed.kind) || NEEDS_PREVIEW.test(src));
   pv.hidden = !show;
-  if (show) { pv.innerHTML = md.render(src); hydrate(pv); }
+  if (show) { pv.innerHTML = markLocal(md.render(src)); hydrate(pv); resolveImages(pv); }
 }
 function onEditBlur() {
   // Window switches also blur; only commit when focus really moved inside the app
@@ -824,6 +827,7 @@ function loadDoc(text, file, { saved = true } = {}) {
   S.src = norm; S.saved = saved ? norm : '';
   S.file = { name: file.name || 'Untitled.md', path: file.path || null, handle: file.handle || null };
   S.hist = []; S.fut = [];
+  clearImageCache();
   S.entry = S.folder?.files.find((f) => (f.path && f.path === S.file.path) || (f.handle && f.handle === S.file.handle)) || null;
   $('#file-name').textContent = S.file.name;
   renderTree();
@@ -881,6 +885,8 @@ const ACTIONS = {
     clone.querySelectorAll('[data-ln]').forEach((n) => n.removeAttribute('data-ln'));
     clone.querySelectorAll('.hot,.flash,.src-hidden').forEach((n) => n.classList.remove('hot', 'flash', 'src-hidden'));
     clone.querySelectorAll('.code-copy').forEach((n) => n.remove());
+    // local images keep their original relative paths, so the export works when saved next to the .md file
+    clone.querySelectorAll('img[data-local-src]').forEach((n) => { n.setAttribute('src', n.dataset.localSrc); n.removeAttribute('data-local-src'); n.classList.remove('img-missing'); n.removeAttribute('title'); });
     const title = S.file.name.replace(/\.[^.]+$/, '');
     const dark = document.documentElement.dataset.resolvedTheme;
     const html = `<!doctype html><html lang="en" data-theme="${dark}" data-resolved-theme="${dark}" data-accent="${S.settings.accent}" data-font="${S.settings.font}" data-palette="${S.settings.palette || 'none'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title.replace(/</g, '&lt;')}</title>
@@ -1034,6 +1040,7 @@ async function openEntry(f) {
     loadDoc(text, { name: f.name, path: f.path, handle: f.handle });
     S.entry = f;
     renderTree();
+    resolveImages(docEl);
     store.set('fudebako.lastRel', f.rel);
     if (innerWidth < 1100) toggleOutline(false);
   } catch (e) { toast('Could not open ' + f.name + ': ' + e.message, 'err'); }
@@ -1048,6 +1055,7 @@ async function useFolder(F, openFirst) {
   // keep the current document attached if it lives in this folder
   S.entry = F.files.find((f) => (f.path && f.path === S.file.path) || (f.handle && f.handle === S.file.handle)) || null;
   renderTree();
+  resolveImages(docEl);
   if (openFirst && !S.entry && F.files.length) {
     const pick = F.files.find((f) => /^(readme|index)\.md$/i.test(f.rel)) || F.files[0];
     await openEntry(pick);
@@ -1081,6 +1089,7 @@ $('#fold-refresh').onclick = async () => {
   if (!S.folder) return;
   S.folder = await scan(S.folder);
   S.entry = S.folder.files.find((f) => f.rel === S.entry?.rel) || null;
+  clearImageCache(); render();
   renderTree(); toast('Refreshed');
 };
 $('#fold-close').onclick = () => {
